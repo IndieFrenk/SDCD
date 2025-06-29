@@ -6,7 +6,6 @@ from watchdog.events import FileSystemEventHandler
 
 class NewFileHandler(FileSystemEventHandler):
     def on_created(self, event):
-        # Questa funzione viene chiamata quando si crea un nuovo file nella dir osservata
         if event.is_directory:
             return
         filepath = event.src_path
@@ -16,33 +15,30 @@ class NewFileHandler(FileSystemEventHandler):
             subprocess.run([
                 "docker", "run", "--rm",
                 "-v", f"{os.getcwd()}/data:/data",
-                "ml-pipeline-converter"  # nome immagine del convertitore
+                "ml-pipeline-converter"  
             ], check=True)
-            filename = "OnlineRetail.csv"  # dopo la conversione, è questo il nome da usare
+            filename = "OnlineRetail.csv" 
     
         if filepath.endswith(".csv"):
                 print(f"[Trigger] Nuovo file dataset rilevato: {filename}")
-                # Fase 2: avvia il container Docker per il data cleaning
                 subprocess.run([
                     "docker", "run", "--rm",
-                    "-v", f"{os.getcwd()}/data:/data",           # monta la cartella data/ nel container
-                    "-e", f"DATASET_FILE={filename}",            # passa il nome del file dataset come variabile d'ambiente
-                    "ml-pipeline-cleaning"                       # nome dell'immagine Docker della funzione di cleaning
+                    "-v", f"{os.getcwd()}/data:/data",           
+                    "-e", f"DATASET_FILE={filename}",           
+                    "ml-pipeline-cleaning"                       
                 ], check=True)
                 print("[Pipeline] Dataset pulito generato, avvio training ML...")
-                # Fase 3: avvia il container Docker per il training del modello
                 subprocess.run([
                     "docker", "run", "--rm",
                     "-v", f"{os.getcwd()}/data:/data",
-                    "ml-pipeline-training"                       # nome dell'immagine Docker della funzione di training
+                    "ml-pipeline-training"                      
                 ], check=True)
                 print("[Pipeline] Modello addestrato e salvato, avvio servizio inferenza...")
-                # Fase 4: avvia il container Docker per il servizio di inferenza (in background)
                 subprocess.run([
                     "docker", "run", "-d", "--name", "ml_inference_service",
                     "-v", f"{os.getcwd()}/data:/data",
-                    "-p", "5000:5000",                           # espone la porta 5000 per l'API HTTP
-                    "ml-pipeline-inference"                      # nome dell'immagine Docker del servizio di inferenza
+                    "-p", "5000:5000",                           
+                    "ml-pipeline-inference"                      
                 ], check=True)
                 print("[Pipeline] Servizio di inferenza avviato (in ascolto su porta 5000).")
 
